@@ -173,7 +173,7 @@
       const heads = type==='ravan' ? 10 : 1;
       let headsG = '';
       for(let i=0;i<heads;i++){
-        const x = heads===1?120:(18 + i*28);
+        const x = heads===1?145:(18 + i*28);
         const y = heads===1?20:(10 + Math.sin((i/(heads-1))*Math.PI)*-6);
         headsG += `
           <g transform="translate(${x},${y})">
