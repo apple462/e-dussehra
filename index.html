@@ -349,7 +349,7 @@
 
     function fireworksToggle(on){ fCanvas.classList.toggle('show', !!on); }
 
-    function startFireworks(){ explosions=[]; lastTime=0; spawnBurst(); spawnBurst(); spawnBurst(); cancelAnimationFrame(fwraf); fwraf = requestAnimationFrame(fwStep); setTimeout(()=>{ cancelAnimationFrame(fwraf); drawCanvasMessage('You defeated Ravan, Meghnad and Kumbhakarna! Dharma wins again 🎉'); }, 7000); }
+    function startFireworks(){ explosions=[]; lastTime=0; spawnBurst(); spawnBurst(); spawnBurst(); cancelAnimationFrame(fwraf); fwraf = requestAnimationFrame(fwStep); setTimeout(()=>{ cancelAnimationFrame(fwraf); drawCanvasMessage('You defeated Ravan, Meghnad and Kumbhakarna! Dharma wins again 🎉'); }, 4000); }
 
     function spawnBurst(){ const cx = Math.random()*fCanvas.width*0.8 + fCanvas.width*0.1; const cy = Math.random()*fCanvas.height*0.4 + fCanvas.height*0.1; const n = 36 + Math.floor(Math.random()*24); const parts=[]; for(let i=0;i<n;i++){ const ang = (i/n)*Math.PI*2; const speed = 80 + Math.random()*140; parts.push({x:cx,y:cy, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, life:1, decay: .012 + Math.random()*0.02}); } explosions.push({parts}); setTimeout(spawnBurst, 400 + Math.random()*600); }
 
@@ -423,15 +423,52 @@
       fireworksToggle(true);
       fCtx.save();
       fCtx.clearRect(0,0,fCanvas.width,fCanvas.height);
-      fCtx.fillStyle = 'rgba(255,255,255,0.88)';
-      const pad = 14; const w = Math.min(fCanvas.width*0.9, 680); const h = 72; const x = (fCanvas.width - w)/2; const y = fCanvas.height*0.16;
-      // rounded rect
-      const r = 12; fCtx.beginPath(); fCtx.moveTo(x+r,y); fCtx.arcTo(x+w,y,x+w,y+h,r); fCtx.arcTo(x+w,y+h,x,y+h,r); fCtx.arcTo(x,y+h,x,y,r); fCtx.arcTo(x,y,x+w,y,r); fCtx.closePath(); fCtx.fill();
-      fCtx.font = '700 18px ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial';
-      fCtx.fillStyle = '#111827';
+
+      // Responsive sizing
+      const marginX = Math.max(10, Math.min(24, fCanvas.width * 0.04));
+      const maxW = Math.min(fCanvas.width - marginX*2, 680);
+      const baseSize = Math.max(12, Math.min(20, Math.floor(fCanvas.width / 22)));
+      const lineHeight = Math.round(baseSize * 1.3);
+
+      // Wrap text to fit
+      fCtx.font = `700 ${baseSize}px ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial`;
       fCtx.textAlign = 'center';
       fCtx.textBaseline = 'middle';
-      fCtx.fillText(text, fCanvas.width/2, y+h/2);
+      const words = text.split(' ');
+      const lines = [];
+      let line = '';
+      for(const w of words){
+        const test = line ? line + ' ' + w : w;
+        if(fCtx.measureText(test).width <= maxW - 20){ line = test; }
+        else { if(line) lines.push(line); line = w; }
+      }
+      if(line) lines.push(line);
+
+      const totalH = lines.length * lineHeight + 16; // padding
+      const boxW = maxW;
+      const x = (fCanvas.width - boxW)/2;
+      const y = Math.max(8, Math.floor(fCanvas.height * 0.1));
+
+      // background rounded rect
+      fCtx.fillStyle = 'rgba(255,255,255,0.9)';
+      const r = 12; const h = totalH; const w = boxW;
+      fCtx.beginPath();
+      fCtx.moveTo(x+r,y);
+      fCtx.arcTo(x+w,y,x+w,y+h,r);
+      fCtx.arcTo(x+w,y+h,x,y+h,r);
+      fCtx.arcTo(x,y+h,x,y,r);
+      fCtx.arcTo(x,y,x+w,y,r);
+      fCtx.closePath();
+      fCtx.fill();
+
+      // draw lines
+      fCtx.fillStyle = '#111827';
+      let ty = y + h/2 - (lines.length*lineHeight)/2 + lineHeight/2;
+      for(const ln of lines){
+        fCtx.fillText(ln, fCanvas.width/2, ty);
+        ty += lineHeight;
+      }
+
       fCtx.restore();
     }
 
