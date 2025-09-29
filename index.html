@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dussehra — Shoot the Fiery Arrow</title>
+  <style>
+    :root{
+      --bg1:#fff7ed;
+      --bg2:#fef9c3;
+      --sky1:#e0f2fe;
+      --sky2:#dcfce7;
+      --ground:#6ee7b7;
+      --text:#111827;
+      --muted:#6b7280;
+      --accent:#f59e0b;
+      --accent2:#ef4444;
+    }
+    html,body{height:100%;margin:0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;}
+    .page{min-height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fff7ed,#fef3c7);padding:16px}
+    .container{width:100%;max-width:1100px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    h1{font-size:clamp(20px,3.2vw,32px);margin:0;font-weight:800}
+    .sub{color:var(--muted);font-size:14px}
+    .btn{border:1px solid rgba(0,0,0,.1);background:#fff;padding:.6rem 1rem;border-radius:16px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+    .btn-primary{background:linear-gradient(180deg,#fde68a,#fbbf24)}
+    .controls{display:flex;gap:8px;align-items:center}
+    .targets{display:flex;gap:6px;align-items:center}
+    .chip{padding:.35rem .7rem;border-radius:999px;border:1px solid rgba(0,0,0,.12);background:#fff;font-size:13px;cursor:pointer}
+    .chip.active{background:linear-gradient(180deg,#e9d5ff,#fbcfe8);border-color:transparent;box-shadow:0 2px 8px rgba(124,58,237,.25)}
+
+    .hud{margin:10px 0}
+    .bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .bar > i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ef4444,#f59e0b,#facc15);transition:width .4s ease}
+    .bar-label{display:flex;justify-content:space-between;font-size:12px;color:#374151;margin-bottom:4px}
+
+    .stage{position:relative;aspect-ratio:16/9;width:100%;border-radius:24px;overflow:hidden;background:linear-gradient(#e0f2fe,#dcfce7);box-shadow:0 8px 24px rgba(0,0,0,.08);border:1px solid #a7f3d0}
+    .sun-glow{position:absolute;left:-30px;top:-30px;width:110px;height:110px;border-radius:999px;background:rgba(253,224,71,.7);filter:blur(18px)}
+    .sun{position:absolute;left:14px;top:14px;width:56px;height:56px;border-radius:999px;background:#fde68a;box-shadow:inset 0 0 12px rgba(0,0,0,.15)}
+    .ground{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(to top,var(--ground),rgba(110,231,183,.4),transparent)}
+
+    .left{position:absolute;left:3%;bottom:10%;width:22%}
+    .ram-wrap{position:relative}
+    .ram-aura{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:999px;background:radial-gradient(circle, rgba(253,224,71,0.6) 0%, rgba(253,224,71,0.18) 60%, transparent 80%);filter:blur(14px);z-index:0;animation:aurapulse 2.6s ease-in-out infinite}
+    @keyframes aurapulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}50%{transform:translate(-50%,-50%) scale(1.08);opacity:.7}}
+
+    .right-slot{position:absolute;bottom:8%;}
+    .slot1{right:5%;width:24%}
+    .slot2{right:25%;width:22%}
+    .slot3{right:45%;width:22%}
+
+    .garlands{position:absolute;left:0;right:0;top:0;height:90px;pointer-events:none}
+    .garland-row{position:absolute;left:0;right:0;height:18px;transform-origin:top center;animation:swing 4s ease-in-out infinite}
+    .marigolds{display:flex;justify-content:space-between;padding:0 24px}
+    .marigolds span{width:10px;height:10px;border-radius:999px;display:block;box-shadow:0 0 0 2px rgba(0,0,0,.05)}
+    @keyframes swing{0%{transform:rotate(1.5deg)}50%{transform:rotate(-1.5deg)}100%{transform:rotate(1.5deg)}}
+
+    .arrow{position:absolute;transform-origin:center}
+
+    @keyframes rise{0%{transform:translateY(0) scale(1);opacity:.85}60%{opacity:1}100%{transform:translateY(-120px) scale(.8);opacity:0}}
+    @keyframes flicker{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+    .flame{position:absolute;bottom:0;border-radius:50%;filter:blur(.6px)}
+
+    @keyframes drift{0%{transform:translateY(0) translateX(0);opacity:.2}40%{opacity:.6}100%{transform:translateY(-60px) translateX(30px);opacity:0}}
+
+    @keyframes pulse{0%{transform:scale(.2);opacity:.9}70%{opacity:.4}100%{transform:scale(1.8);opacity:0}}
+    .shock{position:absolute;border:2px solid rgba(255,255,255,.8);border-radius:999px;pointer-events:none;animation:pulse .6s ease-out}
+
+    #fireworks{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .6s ease}
+    #fireworks.show{opacity:1}
+
+    .help{font-size:12px;color:#4b5563;margin-top:2px}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="container">
+      <header>
+        <div>
+          <h1>Dussehra — Victory of Good over Evil</h1>
+          <div class="sub">Choose an effigy and shoot Ram's fiery arrow. When all three fall, enjoy the fireworks! ✨</div>
+        </div>
+        <div class="controls">
+          <div class="targets" id="targets"></div>
+          <button id="shoot" class="btn btn-primary">Shoot Arrow</button>
+          <button id="reset" class="btn">Reset</button>
+        </div>
+      </header>
+
+      <div class="hud">
+        <div class="bar-label"><span>Evil HP</span><span id="hpLabel">100%</span></div>
+        <div class="bar"><i id="hpBar" style="width:100%"></i></div>
+        <div class="help">Tip: You can destroy Ravan, Meghnad, and Kumbhakarna in any order.</div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="sun-glow"></div>
+        <div class="sun"></div>
+        <div class="ground"></div>
+
+        <!-- Ram with pulsing aura -->
+        <div class="left">
+          <div class="ram-wrap">
+            <div class="ram-aura"></div>
+            <svg viewBox="0 0 240 300" width="100%" height="auto" style="position:relative;z-index:1">
+              <defs>
+                <linearGradient id="ramSkin" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#FCD9B6" />
+                  <stop offset="100%" stop-color="#E8B876" />
+                </linearGradient>
+                <linearGradient id="ramDhoti" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0%" stop-color="#fbbf24" />
+                  <stop offset="100%" stop-color="#f59e0b" />
+                </linearGradient>
+              </defs>
+              <g>
+                <circle cx="120" cy="70" r="30" fill="url(#ramSkin)" />
+                <path d="M90,170 L150,170 L140,240 L100,240 Z" fill="url(#ramDhoti)" />
+                <path d="M84,70 C84,40 156,40 156,70 C156,88 140,96 120,96 C100,96 84,88 84,70 Z" fill="#1f2937" />
+                <rect x="100" y="100" width="40" height="70" rx="8" fill="#facc15" />
+                <path d="M140,140 C180,100 180,210 140,170" fill="none" stroke="#8b5a2b" stroke-width="6" />
+                <line x1="140" y1="140" x2="140" y2="170" stroke="#a16207" stroke-width="2" />
+                <path d="M100,140 L140,160" stroke="url(#ramSkin)" stroke-width="10" stroke-linecap="round" />
+                <rect x="70" y="110" width="20" height="70" rx="4" fill="#92400e" />
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Effigy slots -->
+        <div class="right-slot slot1" data-effigy="ravan"></div>
+        <div class="right-slot slot2" data-effigy="meghnad"></div>
+        <div class="right-slot slot3" data-effigy="kumbhkaran"></div>
+
+        <canvas id="fireworks"></canvas>
+
+        <!-- Garlands -->
+        <div class="garlands">
+          <div class="garland-row r1"><div class="marigolds" id="g1"></div></div>
+          <div class="garland-row r2"><div class="marigolds" id="g2"></div></div>
+          <div class="garland-row r3"><div class="marigolds" id="g3"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (q, el=document) => el.querySelector(q);
+    const $$ = (q, el=document) => [...el.querySelectorAll(q)];
+
+    ["g1","g2","g3"].forEach(id=>{
+      const wrap = document.getElementById(id);
+      for(let i=0;i<18;i++){
+        const s = document.createElement('span');
+        s.style.background = i%2===0 ? '#f59e0b' : '#f97316';
+        wrap.appendChild(s);
+      }
+    });
+
+    function makeEffigySVG(type){
+      const defs = `
+        <defs>
+          <linearGradient id="skin${type}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#f1c27d"/>
+            <stop offset="100%" stop-color="#e0ac69"/>
+          </linearGradient>
+          <linearGradient id="robe${type}" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="${type==='ravan'?'#7c3aed': type==='meghnad'?'#0ea5e9':'#16a34a'}"/>
+            <stop offset="100%" stop-color="${type==='ravan'?'#db2777': type==='meghnad'?'#6366f1':'#22c55e'}"/>
+          </linearGradient>
+        </defs>`;
+      const heads = type==='ravan' ? 10 : 1;
+      let headsG = '';
+      for(let i=0;i<heads;i++){
+        const x = heads===1?120:(18 + i*28);
+        const y = heads===1?20:(10 + Math.sin((i/(heads-1))*Math.PI)*-6);
+        headsG += `
+          <g transform="translate(${x},${y})">
+            <circle cx="0" cy="0" r="${heads===1?20:12}" fill="url(#skin${type})" stroke="#111827" stroke-width="1" />
+            <path d="M-6,4 C-2,1 2,1 6,4" stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M-10,-10 L-6,-16 L-2,-10 L2,-16 L6,-10" fill="#fde047" stroke="#a16207" stroke-width="1"/>
+            <circle cx="-4" cy="-2" r="1.2" fill="#111827"/>
+            <circle cx="4" cy="-2" r="1.2" fill="#111827"/>
+          </g>`;
+      }
+      const body = `
+        <g class="body" opacity="1">
+          <rect x="115" y="110" width="100" height="120" rx="12" fill="url(#robe${type})" stroke="#111827"/>
+          <rect x="145" y="230" width="40" height="60" rx="6" fill="#475569" stroke="#111827"/>
+          <rect x="90" y="130" width="24" height="80" rx="8" fill="#c4b5fd" stroke="#111827"/>
+          <rect x="220" y="130" width="24" height="80" rx="8" fill="#c4b5fd" stroke="#111827"/>
+        </g>`;
+      const pole = `<rect x="165" y="60" width="8" height="280" fill="#92400e"/>`;
+      return `<svg viewBox="0 0 330 380" width="100%" height="auto" class="effigy-svg">${defs}<g transform="translate(20,10)">${headsG}</g>${body}${pole}</svg>`
+    }
+
+    class Effigy{
+      constructor(type, mount){
+        this.type=type;this.mount=mount;this.progress=0;this.burning=false;this.dead=false;
+        mount.innerHTML=makeEffigySVG(type)+`<div class="fx"></div>`;
+        this.svg=$('.effigy-svg',mount);this.body=$('.body',this.svg);this.fx=$('.fx',mount);
+        this.smokeLayer=null;
+      }
+      center(){const r=this.mount.getBoundingClientRect();return{x:r.left+r.width*0.45,y:r.top+r.height*0.5};}
+      ignite(){if(this.burning||this.dead) return;this.burning=true;this._startBurn();this._flames();this._smoke();}
+      _startBurn(){const total=5200;const start=performance.now();const step=(t)=>{if(!this.burning) return;const p=Math.min(1,(t-start)/total);this.progress=Math.round(p*100);this.body.setAttribute('opacity',String(1-p));updateHUD();if(p<1) requestAnimationFrame(step);else{this.dead=true;this._stopParticles();checkAllDestroyed();}};requestAnimationFrame(step);}
+      _flames(){for(let i=0;i<24;i++){const el=document.createElement('span');el.className='flame';const size=12+Math.random()*28;el.style.left=(5+Math.random()*80)+'%';el.style.width=size+'px';el.style.height=(size*1.6)+'px';el.style.background='radial-gradient(circle at 50% 40%, #fff7ae 0%, #fb923c 40%, #ef4444 70%, transparent 75%)';el.style.animation=`rise ${1+Math.random()*0.7}s ${Math.random()*0.8}s infinite ease-out, flicker ${0.8+Math.random()*0.4}s infinite`;this.fx.appendChild(el);}}
+      _smoke(){const layer=document.createElement('div');layer.style.position='absolute';layer.style.inset='0';layer.style.pointerEvents='none';layer.style.opacity='0.6';for(let i=0;i<10;i++){const c=document.createElement('span');c.style.position='absolute';c.style.bottom='96px';c.style.left=(5+Math.random()*80)+'%';const s=24+Math.random()*40;c.style.width=s+'px';c.style.height=s+'px';c.style.borderRadius='999px';c.style.background='radial-gradient(circle at 40% 40%, rgba(120,120,120,0.6), rgba(120,120,120,0.2), rgba(120,120,120,0))';c.style.animation=`drift ${4+Math.random()*3}s ${Math.random()*2}s infinite linear`;layer.appendChild(c);} this.mount.appendChild(layer); this.smokeLayer=layer;}
+      _stopParticles(){ if(this.fx) this.fx.innerHTML=''; if(this.smokeLayer) this.smokeLayer.remove(); }
+    }
+
+    const stage = document.getElementById('stage');
+    const effigySlots = $$('.right-slot');
+    const effigies = {
+      ravan: new Effigy('ravan', effigySlots.find(e=>e.dataset.effigy==='ravan')),
+      meghnad: new Effigy('meghnad', effigySlots.find(e=>e.dataset.effigy==='meghnad')),
+      kumbhkaran: new Effigy('kumbhkaran', effigySlots.find(e=>e.dataset.effigy==='kumbhkaran')),
+    };
+
+    const targetsWrap = document.getElementById('targets');
+    const targetOrder = ['ravan','meghnad','kumbhkaran'];
+    let currentTarget = 'ravan';
+    targetOrder.forEach(t=>{
+      const chip = document.createElement('button'); chip.className='chip'; chip.textContent = t[0].toUpperCase()+t.slice(1); chip.dataset.target=t; targetsWrap.appendChild(chip);
+    });
+    function setTarget(t){ currentTarget=t; $$('.chip',targetsWrap).forEach(c=>c.classList.toggle('active', c.dataset.target===t)); updateHUD(); }
+    setTarget('ravan');
+
+    function updateHUD(){
+      const hpAvg = Math.round((Object.values(effigies).reduce((acc,e)=> acc + (100 - (e.progress||0)), 0)) / 3);
+      document.getElementById('hpBar').style.width = hpAvg+'%';
+      document.getElementById('hpLabel').textContent = hpAvg+'%';
+    }
+
+    const shootBtn = document.getElementById('shoot');
+    const resetBtn = document.getElementById('reset');
+
+    let arrowInFlight = false;
+    shootBtn.addEventListener('click', ()=>{
+      if(arrowInFlight) return;
+      const target = effigies[currentTarget];
+      if(!target || target.dead) return;
+      fireArrowTo(target);
+    });
+
+    resetBtn.addEventListener('click', ()=>{
+      effigySlots.forEach(s=> s.innerHTML='');
+      effigies.ravan = new Effigy('ravan', effigySlots.find(e=>e.dataset.effigy==='ravan'));
+      effigies.meghnad = new Effigy('meghnad', effigySlots.find(e=>e.dataset.effigy==='meghnad'));
+      effigies.kumbhkaran = new Effigy('kumbhkaran', effigySlots.find(e=>e.dataset.effigy==='kumbhkaran'));
+      setTarget('ravan');
+      fireworksToggle(false);
+      updateHUD();
+    });
+
+    function fireArrowTo(target){
+      arrowInFlight = true; shootBtn.disabled = true;
+      const el = document.createElement('div'); el.className='arrow'; el.innerHTML = arrowSVG(); stage.appendChild(el);
+      const stageRect = stage.getBoundingClientRect();
+      const origin = { x: stageRect.width*0.18, y: stageRect.height*0.58 };
+      const targetPos = relPos(target.center());
+      const ctrl = { x: (origin.x+targetPos.x)/2, y: Math.min(origin.y, targetPos.y) - stageRect.height*0.15 };
+
+      let start=null; const dur=1600; const trail=[];
+      function step(t){
+        if(!start) start=t; const p = Math.min(1,(t-start)/dur);
+        const x = (1-p)*(1-p)*origin.x + 2*(1-p)*p*ctrl.x + p*p*targetPos.x;
+        const y = (1-p)*(1-p)*origin.y + 2*(1-p)*p*ctrl.y + p*p*targetPos.y;
+        const dx = 2*(1-p)*(ctrl.x-origin.x) + 2*p*(targetPos.x-ctrl.x);
+        const dy = 2*(1-p)*(ctrl.y-origin.y) + 2*p*(targetPos.y-ctrl.y);
+        const angle = Math.atan2(dy,dx)*180/Math.PI;
+        el.style.left = (x-10)+ 'px';
+        el.style.top = (y-5)+ 'px';
+        el.style.transform = `rotate(${angle}deg)`;
+        const tip = el.querySelector('#tip'); tip.style.transform = `scale(${1+0.08*Math.sin(t*0.02)})`;
+        if(Math.random()<0.6){
+          const s = document.createElement('div'); s.style.position='absolute'; s.style.left=(x-3)+'px'; s.style.top=(y)+'px'; s.style.width='6px'; s.style.height='6px'; s.style.borderRadius='999px'; s.style.background='radial-gradient(circle,#fde047,#fb923c 60%, #ef4444 80%, transparent 82%)'; s.style.opacity='.8'; s.style.transition='transform .6s linear, opacity .6s linear'; stage.appendChild(s); trail.push(s); requestAnimationFrame(()=>{ s.style.transform='translateY(10px) scale(.6)'; s.style.opacity='0'; })
+        }
+        if(p<1){ requestAnimationFrame(step); } else { impact(target, x,y); cleanup(); }
+      }
+      function cleanup(){ setTimeout(()=>{ el.remove(); trail.forEach(n=>n.remove()); arrowInFlight=false; shootBtn.disabled=false; }, 100); }
+      requestAnimationFrame(step);
+    }
+
+    function relPos(abs){ const r = stage.getBoundingClientRect(); return { x: abs.x - r.left, y: abs.y - r.top }; }
+
+    function impact(target, x,y){ const s = document.createElement('div'); s.className='shock'; s.style.left=(x-12)+'px'; s.style.top=(y-12)+'px'; s.style.width='24px'; s.style.height='24px'; stage.appendChild(s); setTimeout(()=>s.remove(),650); target.ignite(); }
+
+    function arrowSVG(){ return `
+      <svg width="70" height="18" viewBox="0 0 70 18">
+        <rect x="4" y="8" width="54" height="2" rx="1" fill="#8b5a2b" />
+        <path d="M0,9 L8,4 L8,14 Z" fill="#1f2937" />
+        <g id="tip" transform="translate(58,9)">
+          <path d="M0,0 C3,-6 12,-6 12,0 C12,6 3,6 0,0 Z" fill="url(#flameGrad)" />
+          <path d="M3,0 C5,-3 9,-3 9,0 C9,3 5,3 3,0 Z" fill="#fde047" opacity="0.85" />
+          <defs>
+            <linearGradient id="flameGrad" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stop-color="#ef4444" />
+              <stop offset="100%" stop-color="#f59e0b" />
+            </linearGradient>
+          </defs>
+        </g>
+      </svg>` }
+
+    function checkAllDestroyed(){ if(Object.values(effigies).every(e=>e.dead)){ fireworksToggle(true); startFireworks(); } }
+
+    const fCanvas = document.getElementById('fireworks');
+    const fCtx = fCanvas.getContext('2d');
+    let fwraf; let explosions=[]; let lastTime=0;
+
+    function resizeCanvas(){ fCanvas.width = stage.clientWidth; fCanvas.height = stage.clientHeight; }
+    window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+    function fireworksToggle(on){ fCanvas.classList.toggle('show', !!on); }
+
+    function startFireworks(){ explosions=[]; lastTime=0; spawnBurst(); spawnBurst(); spawnBurst(); cancelAnimationFrame(fwraf); fwraf = requestAnimationFrame(fwStep); setTimeout(()=>{ cancelAnimationFrame(fwraf); }, 7000); }
+
+    function spawnBurst(){ const cx = Math.random()*fCanvas.width*0.8 + fCanvas.width*0.1; const cy = Math.random()*fCanvas.height*0.4 + fCanvas.height*0.1; const n = 36 + Math.floor(Math.random()*24); const parts=[]; for(let i=0;i<n;i++){ const ang = (i/n)*Math.PI*2; const speed = 80 + Math.random()*140; parts.push({x:cx,y:cy, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, life:1, decay: .012 + Math.random()*0.02}); } explosions.push({parts}); setTimeout(spawnBurst, 400 + Math.random()*600); }
+
+    function fwStep(ts){ if(!lastTime) lastTime = ts; const dt = Math.min(32, ts-lastTime)/1000; lastTime = ts; fCtx.clearRect(0,0,fCanvas.width,fCanvas.height); explosions.forEach(ex => { ex.parts.forEach(p => { p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 80*dt; p.life -= p.decay; if(p.life>0){ fCtx.globalAlpha = Math.max(0, p.life); const r = 2 + (1-p.life)*3; const hue = (p.x + p.y) % 360; fCtx.fillStyle = `hsl(${hue}, 80%, 60%)`; fCtx.beginPath(); fCtx.arc(p.x, p.y, r, 0, Math.PI*2); fCtx.fill(); } }); ex.parts = ex.parts.filter(p=>p.life>0); }); explosions = explosions.filter(ex=>ex.parts.length>0); fwraf = requestAnimationFrame(fwStep); }
+
+    targetsWrap.addEventListener('click', (e)=>{ const btn = e.target.closest('.chip'); if(!btn) return; setTarget(btn.dataset.target); });
+
+    updateHUD();
+  </script>
+</body>
+</html>
