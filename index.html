@@ -71,6 +71,11 @@
     #fireworks.show{opacity:1}
 
     .help{font-size:12px;color:#4b5563;margin-top:2px}
+    .sharebar{margin-bottom:12px; margin-top: 64px; display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-start}
+    .sharebar input{flex:1 1 180px;min-width:160px;border:1px solid rgba(0,0,0,.12);border-radius:12px;padding:.55rem .8rem;font-size:14px}
+    .note{font-size:12px;color:#6b7280; margin-bottom: 4px;}
+    .result-msg{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#fff;border:1px solid rgba(0,0,0,.12);box-shadow:0 8px 24px rgba(0,0,0,.12);padding:.7rem 1rem;border-radius:14px;font-weight:700;color:#111827;z-index:50;display:none}
+    .blessing{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#fff;border:1px solid rgba(0,0,0,.12);box-shadow:0 8px 24px rgba(0,0,0,.12);padding:.55rem .9rem;border-radius:14px;font-weight:800;color:#111827;z-index:60;display:none}
   </style>
 </head>
 <body>
@@ -94,6 +99,8 @@
         <div class="help">Tip: You can destroy Ravan, Meghnad, and Kumbhakarna in any order.</div>
       </div>
 
+
+
       <div class="stage" id="stage">
         <div class="sun-glow"></div>
         <div class="sun"></div>
@@ -116,8 +123,14 @@
               </defs>
               <g>
                 <circle cx="120" cy="70" r="30" fill="url(#ramSkin)" />
+                <circle cx="110" cy="70" r="2" fill="#111827" />
+                <circle cx="130" cy="70" r="2" fill="#111827" />
+                <path id="ramSmile" d="M112,78 Q120,83 128,78" stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round">
+                  <animate attributeName="d" dur="3.2s" repeatCount="indefinite"
+                    values="M112,78 Q120,83 128,78; M112,78 Q120,85 128,78; M112,78 Q120,83 128,78; M112,78 Q120,81 128,78; M112,78 Q120,83 128,78"
+                    keyTimes="0;0.32;0.64;0.82;1" />
+                </path>
                 <path d="M90,170 L150,170 L140,240 L100,240 Z" fill="url(#ramDhoti)" />
-                <path d="M84,70 C84,40 156,40 156,70 C156,88 140,96 120,96 C100,96 84,88 84,70 Z" fill="#1f2937" />
                 <rect x="100" y="100" width="40" height="70" rx="8" fill="#facc15" />
                 <path d="M140,140 C180,100 180,210 140,170" fill="none" stroke="#8b5a2b" stroke-width="6" />
                 <line x1="140" y1="140" x2="140" y2="170" stroke="#a16207" stroke-width="2" />
@@ -142,12 +155,24 @@
           <div class="garland-row r3"><div class="marigolds" id="g3"></div></div>
         </div>
       </div>
+      <div class="sharebar" id="shareBar">
+        <button id="shareCta" class="btn btn-primary">Challenge your friends</button>
+        <input id="nameInput" type="text" placeholder="Your name (e.g., Josh)" style="display:none" />
+        <button id="shareBtn" class="btn btn-primary" style="display:none">Share</button>
+        <button id="copyBtn" class="btn" style="display:none">Copy Link</button>
+      </div>
+      <!-- <div class="note">Create your personalised link to share with friends and family.</div> -->
+      <!-- <div class="note">Best viewed on desktop</div> -->
     </div>
   </div>
+
+  <!-- blessing toast moved into canvas rendering -->
 
   <script>
     const $ = (q, el=document) => el.querySelector(q);
     const $$ = (q, el=document) => [...el.querySelectorAll(q)];
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
 
     ["g1","g2","g3"].forEach(id=>{
       const wrap = document.getElementById(id);
@@ -242,6 +267,7 @@
       const target = effigies[currentTarget];
       if(!target || target.dead) return;
       fireArrowTo(target);
+      maybeHanumanBoost(target);
     });
 
     resetBtn.addEventListener('click', ()=>{
@@ -314,7 +340,7 @@
 
     function fireworksToggle(on){ fCanvas.classList.toggle('show', !!on); }
 
-    function startFireworks(){ explosions=[]; lastTime=0; spawnBurst(); spawnBurst(); spawnBurst(); cancelAnimationFrame(fwraf); fwraf = requestAnimationFrame(fwStep); setTimeout(()=>{ cancelAnimationFrame(fwraf); }, 7000); }
+    function startFireworks(){ explosions=[]; lastTime=0; spawnBurst(); spawnBurst(); spawnBurst(); cancelAnimationFrame(fwraf); fwraf = requestAnimationFrame(fwStep); setTimeout(()=>{ cancelAnimationFrame(fwraf); drawCanvasMessage('You defeated Ravan, Meghnad and Kumbhakarna! Dharma wins again 🎉'); }, 7000); }
 
     function spawnBurst(){ const cx = Math.random()*fCanvas.width*0.8 + fCanvas.width*0.1; const cy = Math.random()*fCanvas.height*0.4 + fCanvas.height*0.1; const n = 36 + Math.floor(Math.random()*24); const parts=[]; for(let i=0;i<n;i++){ const ang = (i/n)*Math.PI*2; const speed = 80 + Math.random()*140; parts.push({x:cx,y:cy, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, life:1, decay: .012 + Math.random()*0.02}); } explosions.push({parts}); setTimeout(spawnBurst, 400 + Math.random()*600); }
 
@@ -322,7 +348,105 @@
 
     targetsWrap.addEventListener('click', (e)=>{ const btn = e.target.closest('.chip'); if(!btn) return; setTarget(btn.dataset.target); });
 
+    // Greeting + share logic
+    const headingEl = document.querySelector('h1');
+    const nameInput = document.getElementById('nameInput');
+    const shareBtn = document.getElementById('shareBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const shareCta = document.getElementById('shareCta');
+    // blessing now rendered inside canvas
+
+    function sanitizeName(name){
+      return name.replace(/[<>]/g, '').trim();
+    }
+
+    // If a name is present in the URL, use it as the main heading
+    (function applyHeadingFromUrl(){
+      const raw = params.get('name');
+      if(raw && raw.trim()){
+        const clean = sanitizeName(raw);
+        headingEl.textContent = `${clean} wishes you a Happy Dussehra!`;
+      }
+    })();
+
+    function buildShareUrl(withName){
+      const u = new URL(window.location.href);
+      if(withName && withName.trim()){
+        u.searchParams.set('name', sanitizeName(withName));
+      } else {
+        u.searchParams.delete('name');
+      }
+      return u.toString();
+    }
+
+    async function doShare(){
+      const name = nameInput.value;
+      const shareUrl = buildShareUrl(name);
+      const shareData = { title: 'Dussehra Greetings', text: 'Happy Dussehra! 🔥🏹', url: shareUrl };
+      if(navigator.share){
+        try{ await navigator.share(shareData); }catch(e){ /* user cancelled */ }
+      } else {
+        try{ await navigator.clipboard.writeText(shareUrl); shareBtn.textContent='Link Copied'; setTimeout(()=>shareBtn.textContent='Share', 1500); }catch(e){ /* ignore */ }
+      }
+    }
+
+    async function doCopy(){
+      const shareUrl = buildShareUrl(nameInput.value);
+      try{ await navigator.clipboard.writeText(shareUrl); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy Link', 1500); }catch(e){ /* ignore */ }
+    }
+
+    // CTA flow: show inputs and actions only after clicking CTA
+    shareCta.addEventListener('click', ()=>{
+      shareCta.style.display='none';
+      nameInput.style.display='block';
+      shareBtn.style.display='inline-block';
+      copyBtn.style.display='inline-block';
+      nameInput.focus();
+    });
+
+    shareBtn.addEventListener('click', doShare);
+    copyBtn.addEventListener('click', doCopy);
+
     updateHUD();
+
+    // Draw a message on the fireworks canvas (used for victory and blessing)
+    function drawCanvasMessage(text){
+      fireworksToggle(true);
+      fCtx.save();
+      fCtx.clearRect(0,0,fCanvas.width,fCanvas.height);
+      fCtx.fillStyle = 'rgba(255,255,255,0.88)';
+      const pad = 14; const w = Math.min(fCanvas.width*0.9, 680); const h = 72; const x = (fCanvas.width - w)/2; const y = fCanvas.height*0.16;
+      // rounded rect
+      const r = 12; fCtx.beginPath(); fCtx.moveTo(x+r,y); fCtx.arcTo(x+w,y,x+w,y+h,r); fCtx.arcTo(x+w,y+h,x,y+h,r); fCtx.arcTo(x,y+h,x,y,r); fCtx.arcTo(x,y,x+w,y,r); fCtx.closePath(); fCtx.fill();
+      fCtx.font = '700 18px ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial';
+      fCtx.fillStyle = '#111827';
+      fCtx.textAlign = 'center';
+      fCtx.textBaseline = 'middle';
+      fCtx.fillText(text, fCanvas.width/2, y+h/2);
+      fCtx.restore();
+    }
+
+    // Generic banner with duration; will not hide canvas if it was already showing
+    function drawCanvasBanner(text, durationMs){
+      const wasShowing = fCanvas.classList.contains('show');
+      drawCanvasMessage(text);
+      setTimeout(()=>{
+        if(!wasShowing){
+          fireworksToggle(false);
+          fCtx.clearRect(0,0,fCanvas.width,fCanvas.height);
+        }
+      }, Math.max(3000, durationMs||0));
+    }
+
+    // Hanuman power boost (20% chance): show blessing and auto-fire a second arrow
+    function maybeHanumanBoost(target){
+      const boosted = Math.random() < 0.1;
+      if(boosted){
+        drawCanvasBanner('⚡ You unlocked Hanuman\u2019s blessing!', 3200);
+        // attempt a second arrow shortly after the first completes
+        setTimeout(()=>{ if(!target.dead) fireArrowTo(target); }, 1800);
+      }
+    }
   </script>
 </body>
 </html>
