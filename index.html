@@ -514,5 +514,33 @@
       }
     }
   </script>
+
+  <script>
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get("name");
+
+  if (name) {
+    // Update title
+    document.title = `Happy Dussehra from ${name}! 🎉 | Celebrate Victory of Good Over Evil`;
+
+    // Update description meta
+    let descTag = document.querySelector('meta[name="description"]');
+    if (!descTag) {
+      descTag = document.createElement("meta");
+      descTag.name = "description";
+      document.head.appendChild(descTag);
+    }
+    descTag.content = `Celebrate Dussehra with ${name}! Shoot arrows, burn down Ravan, Meghnad & Kumbhakarna, and enjoy fireworks of Dharma’s victory.`;
+
+    // Update Open Graph
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", `Happy Dussehra ${name}! 🎉`);
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute("content", `Celebrate Dussehra with ${name}! Play the game and enjoy fireworks.`);
+  }
+})();
+</script>
+
 </body>
 </html>
